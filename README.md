@@ -4,7 +4,7 @@
 1) USAGE
 
 Executable anywhere as long as the PATHTO is correctly specified.
-> BAM2GFF-call.sh ["GTF file"] ["feature type"] ["BAM file"] ["CHROM SIZES"] ["SAMPLENAME"]
+> BAM2GFF-call.sh ["GTF file"] ["BAM file"] ["CHROM SIZES"] ["SAMPLENAME"]
 
 
 2) DIRECTORY structure
