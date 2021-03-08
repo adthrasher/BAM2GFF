@@ -7,7 +7,7 @@
 
 if [ $# -lt 3 ]; then
   echo ""
-  echo 1>&2 Usage: $0 ["GTF file"] ["feature type"] ["BAM file"] ["CHROM SIZES"] ["SAMPLENAME"]
+  echo 1>&2 Usage: $0 ["GTF file"] ["BAM file"] ["CHROM SIZES"] ["SAMPLENAME"]
   echo ""
   exit 1
 fi
@@ -17,10 +17,6 @@ fi
 
 # GTF files
 GTFFILE=$1
-
-#FEATURE TYPE
-FEATURE=$2
-FEATURE=${FEATURE:=gene}
 
 # BAM file
 BAMFILE=$3
@@ -38,15 +34,14 @@ echo "######            BAM2GFF v1           ######"
 echo "#############################################"
 
 echo "BAM file: $BAMFILE"
-echo "FEATURE type: $FEATURE"
 echo "Sample Name: $SAMPLENAME"
 #================================================================================
 #
 # GENERATING GFF files for each genomic region
 #
 mkdir -p annotation
-echo "BAM2GFF_gtftogenes.py -g $GTFFILE -f $FEATURE -c $CHROMSIZES"
-BAM2GFF_gtftogenes.py -g $GTFFILE -f $FEATURE -c $CHROMSIZES
+echo "BAM2GFF_gtftogenes.py -g $GTFFILE -c $CHROMSIZES"
+BAM2GFF_gtftogenes.py -g $GTFFILE -c $CHROMSIZES
 echo
 
 #

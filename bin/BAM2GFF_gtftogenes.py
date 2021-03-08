@@ -65,8 +65,6 @@ def main():
     parser = argparse.ArgumentParser(usage=usage)
     parser.add_argument("-g", "--gtf", dest="gtf", required=True,
                         help="Enter .gtf/gff file to be processed.")
-    parser.add_argument("-f", "--feature", dest="feature", default="gene",
-                        help="Enter feature type [gene/transcript] to be processed.")
     parser.add_argument("-d", "--dist", dest="distance", default=2000, type=int,
                         help="Distance (bp) from site [TSS/TES].")
     parser.add_argument("-c", "--chrom", dest="chrom", required=True,
@@ -77,17 +75,39 @@ def main():
 
     flank = options.distance #flank distance from TSS / TES
 
-    if options.chrom and options.gtf and options.feature:
+    if options.chrom and options.gtf:
         chromsizefile = open(options.chrom, 'r')
         chrom_sizes = {}
         for line in chromsizefile:
             line = line.split('\t')
             chrom_sizes[line[0]] = line[1].rstrip("\n")
 
-        feature = options.feature
+        #feature = options.feature
+        gtf_file = open(options.gtf, 'r')
+        
+        feature_dict = {}
+        if not options.gtf.split('.')[-1] == 'gtf':
+            sys.exit("ERROR :\tGTF required")
+            
+        #reading the feature type to be used
+        for line in gtf_file:
+            if not line.startswith('#'):
+                lines = line.split("\t")
+                feature_dict[lines[2]] = lines[2]
 
+        if 'transcript' in feature_dict:
+            feature = "transcript"
+        elif 'gene' in feature_dict:
+            feature = "gene"
+        else:
+            sys.exit("ERROR :\tGTF with either transcript/gene annotation is needed")
+            
+        print("NOTE :\tFeature type used is '%s'" %(feature))
+        
+        #reading the gff_file to parse regions
+        gff_file = open(options.gtf, 'r')
+    
         if options.gtf.split('.')[-1] == 'gff':
-            gff_file = open(options.gtf, 'r')
             for line in gff_file:
                 if not line.startswith('#'):
                     lines = line.split("\t")
@@ -96,7 +116,6 @@ def main():
                     PSEUDOGFF.write(results+"\n")
                     parse_genelocations(chrom_sizes, results, flank)
         elif options.gtf.split('.')[-1] == 'gtf':
-            gff_file = open(options.gtf, 'r')
             for line in gff_file:
                 if not line.startswith('#'):
                     lines = line.split("\t")
