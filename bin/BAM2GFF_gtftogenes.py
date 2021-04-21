@@ -129,8 +129,15 @@ def main():
                                                           newline[0], newline[1].strip('";')))
                 else:
                     sys.exit("ERROR :\tFailed to process %s" %(gtf_name))
-                PSEUDOGFF.write(results+"\n")
-                parse_genelocations(chrom_sizes, results, flank)
+
+                #create annotation files
+                try: 
+                    if chrom_sizes[lines[0]]:
+                        PSEUDOGFF.write(results+"\n")
+                        parse_genelocations(chrom_sizes, results, flank)
+                except KeyError:
+                    continue
+                    #print("%s not found in genome fasta, skipped!" %(lines[0]))
 
 if __name__ == "__main__":
     main()
