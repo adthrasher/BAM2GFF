@@ -3,7 +3,7 @@
 #=================================HEATMAP 3 CODE=============================
 #============================================================================
 
-heatmap.3 <- function(x,
+heatmap.4 <- function(x,
                       Rowv = TRUE, Colv = if (symm) "Rowv" else TRUE,
                       distfun = dist,
                       hclustfun = hclust,
@@ -455,21 +455,22 @@ breaks=seq(0,finalcount,by=(finalcount/100));
 colz=colorRampPalette(c("white", "red"))(length(breaks)-1);
 
 png(paste(samplename, "-heatmap.promoters.png", sep=""), type="cairo")
-heatmap.3(promoters[,3:ncol(promoters)], col=colz, breaks=breaks, trace="none", dendrogram="none", Colv=NA, Rowv=NA, density.info="none", labRow=NA, labCol=NA, main=paste(samplename, "Promoters",sep="\n"))
+heatmap.4(promoters[,3:ncol(promoters)], col=colz, breaks=breaks, dendrogram="none", Colv=NA, Rowv=NA, labRow=NA, labCol=NA, xoption="promoters", xlab="Genomic Region (bp)", main=paste(samplename, "Promoters",sep="\n"))
 dev.off()
 pdf(paste(samplename, "-heatmap.promoters.pdf", sep=""))
-heatmap.3(promoters[,3:ncol(promoters)], col=colz, breaks=breaks, trace="none", dendrogram="none", Colv=NA, Rowv=NA, density.info="none", labRow=NA, labCol=NA, main=paste(samplename, "Promoters",sep="\n"))
+heatmap.4(promoters[,3:ncol(promoters)], col=colz, breaks=breaks, dendrogram="none", Colv=NA, Rowv=NA, labRow=NA, labCol=NA, xoption="promoters", xlab="Genomic Region (bp)", main=paste(samplename, "Promoters",sep="\n"))
 dev.off()
 
 remainder = round((quantile(as.vector(t(combined[,3:ncol(combined)])),.80)),digits=0) %% 2
 finalcount = round((quantile(as.vector(t(combined[,3:ncol(combined)])),.80) + remainder),digits=0) + remainder
 if (finalcount < 2) { finalcount = 2; } #adjusting for lack of variability in bam density scores
-colz=colorRampPalette(c("white", "red"))(finalcount)
-breaks=seq(0,finalcount,by=1)
+
+breaks=seq(0,finalcount,by=(finalcount/100));
+colz=colorRampPalette(c("white", "red"))(length(breaks)-1);
 
 png(paste(samplename, "-heatmap.entiregene.png", sep=""), type="cairo")
-heatmap.3(combined[,3:ncol(combined)], col=colz, breaks=breaks, trace="none", dendrogram="none", Colv=NA, Rowv=NA, density.info="none", labRow=NA, labCol=NA, main=paste(samplename, "MetaGenes",sep="\n"))
+heatmap.4(combined[,3:ncol(combined)], col=colz, breaks=breaks, dendrogram="none", Colv=NA, Rowv=NA, labRow=NA, labCol=NA, xoption="genebody", xlab="Genomic Region (bp)", main=paste(samplename, "MetaGenes",sep="\n"))
 dev.off()
 pdf(paste(samplename, "-heatmap.entiregene.pdf", sep=""))
-heatmap.3(combined[,3:ncol(combined)], col=colz, breaks=breaks, trace="none", dendrogram="none", Colv=NA, Rowv=NA, density.info="none", labRow=NA, labCol=NA, main=paste(samplename, "MetaGenes",sep="\n"))
+heatmap.4(combined[,3:ncol(combined)], col=colz, breaks=breaks, dendrogram="none", Colv=NA, Rowv=NA, labRow=NA, labCol=NA, xoption="genebody", xlab="Genomic Region (bp)", main=paste(samplename, "MetaGenes",sep="\n"))
 dev.off()
