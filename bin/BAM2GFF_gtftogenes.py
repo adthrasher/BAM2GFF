@@ -5,6 +5,7 @@
 
 import sys
 import os
+import re
 import argparse
 
 def parse_genelocations(chromz, results, flank):
@@ -123,19 +124,24 @@ def main():
             elif not haschr and lines[0].startswith('chr'):
                 lines[0] = lines[0][3:]
             if lines[2] == feature:
+                newline = lines[8].split(';')
                 if gtf_name.split('.')[-1] == 'gff' or gtf_name.split('.')[-1] == 'gff3':
-                    newline = lines[8].split(';')
-                    if feature == 'transcript':
+                    if re.search(";transcript_id", lines[8]):
                         transcript = [s for s in newline if "transcript_id=" in s]
                     else:
                         transcript = newline[0:1]
                     results = ("{0}\t{1}\t{2}".format(lines[0],
                                                       "\t".join(lines[1:8]), transcript[0]))
                 elif gtf_name.split('.')[-1] == 'gtf':
-                    newline = lines[8].split(' ')
-                    results = ("{0}\t{1}\t{2}={3}".format(lines[0],
-                                                          "\t".join(lines[1:8]),
-                                                          newline[0], newline[1].strip('";')))
+                    if re.search("; transcript_id", lines[8]):
+                        transcript = [s for s in newline if "transcript_id " in s]
+                    else:
+                        transcript = newline[0:1]
+                    transcript[0] = transcript[0].lstrip(' ').replace('"','')
+                    transcript = re.sub(' ', '=', transcript[0])
+                    results = ("{0}\t{1}\t{2}".format(lines[0],
+                                                      "\t".join(lines[1:8]),
+                                                      transcript))
                 else:
                     sys.exit("ERROR :\tFailed to process %s" %(gtf_name))
 
