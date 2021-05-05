@@ -120,6 +120,8 @@ def main():
             lines = line.rstrip("\n").split("\t")
             if haschr and not lines[0].startswith('chr'):
                 lines[0] = "chr"+lines[0]
+            elif not haschr and lines[0].startswith('chr'):
+                lines[0] = lines[0][3:]
             if lines[2] == feature:
                 if gtf_name.split('.')[-1] == 'gff' or gtf_name.split('.')[-1] == 'gff3':
                     newline = lines[8].split(';')
