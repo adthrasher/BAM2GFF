@@ -14,12 +14,12 @@ def parse_genelocations(chromz, results, flank):
         results (string) : Individual gene coordinates
         flank (int) : genomic distance from start/end site
     """
-    
+
     #initialize outputfiles
     PROMOTERSGFF = open('annotation/promoters.gff', 'a')
     UPSTREAMGFF = open('annotation/upstream.gff', 'a')
     DOWNSTREAMGFF = open('annotation/downstream.gff', 'a')
-    
+
     lines = results.split("\t")
     lines[3] = int(lines[3])
     lines[4] = int(lines[4])
@@ -58,7 +58,7 @@ def parse_genelocations(chromz, results, flank):
                                                       downstart, downend, "\t".join(lines[5:])))
 
 def main():
-    usage = "usage: " + sys.argv[0] + " -g [GTF/GFF file] -f [FEATURE TYPE (gene/transcript)] " \
+    usage = "usage: " + sys.argv[0] + " -g [GTF/GFF file] " \
             "-c [CHROMSIZES] -d [DISTANCE(bp) from start/end site] [-h help]"
     parser = argparse.ArgumentParser(usage=usage)
     parser.add_argument("-g", "--gtf", dest="gtf", required=True,
@@ -75,17 +75,20 @@ def main():
         os.makedirs('annotation')
 
     flank = options.distance #flank distance from TSS / TES
+    haschr = False #check "chr" prefix in gtf file
 
     chromsizefile = open(options.chrom, 'r')
     chrom_sizes = {}
     for line in chromsizefile:
         line = line.split('\t')
         chrom_sizes[line[0]] = line[1].rstrip("\n")
+        if line[0].startswith('chr'):
+            haschr = True
 
     #feature = options.feature
     gtf_name = options.gtf
     gtf_file = open(options.gtf, 'r')
-    
+
     feature_dict = {}
 
     #reading the feature type to be used
@@ -100,28 +103,32 @@ def main():
         feature = "gene"
     else:
         sys.exit("ERROR :\tGTF/GFF with either transcript/gene annotation is needed")
-        
+
     print("NOTE :\tFeature type used is '%s'" %(feature))
-    
+
     #reading the gff_file to parse regions
     gff_file = open(options.gtf, 'r')
-    
+
     #initialize output files
     PSEUDOGFF = open('annotation/genes.gff', 'w')
     PROMOTERSGFF = open('annotation/promoters.gff', 'w')
     UPSTREAMGFF = open('annotation/upstream.gff', 'w')
     DOWNSTREAMGFF = open('annotation/downstream.gff', 'w')
-    
+
     for line in gff_file:
         if not line.startswith('#'):
             lines = line.rstrip("\n").split("\t")
-            if not lines[0].startswith('chr'):
+            if haschr and not lines[0].startswith('chr'):
                 lines[0] = "chr"+lines[0]
             if lines[2] == feature:
                 if gtf_name.split('.')[-1] == 'gff' or gtf_name.split('.')[-1] == 'gff3':
                     newline = lines[8].split(';')
-                    transcript = [s for s in newline if "transcript_id=" in s]
-                    results = ("{0}\t{1}\t{2}".format(lines[0], "\t".join(lines[1:8]), transcript[0]))
+                    if feature == 'transcript':
+                        transcript = [s for s in newline if "transcript_id=" in s]
+                    else:
+                        transcript = newline[0:1]
+                    results = ("{0}\t{1}\t{2}".format(lines[0],
+                                                      "\t".join(lines[1:8]), transcript[0]))
                 elif gtf_name.split('.')[-1] == 'gtf':
                     newline = lines[8].split(' ')
                     results = ("{0}\t{1}\t{2}={3}".format(lines[0],
@@ -131,7 +138,7 @@ def main():
                     sys.exit("ERROR :\tFailed to process %s" %(gtf_name))
 
                 #create annotation files
-                try: 
+                try:
                     if chrom_sizes[lines[0]]:
                         PSEUDOGFF.write(results+"\n")
                         parse_genelocations(chrom_sizes, results, flank)
@@ -141,3 +148,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
