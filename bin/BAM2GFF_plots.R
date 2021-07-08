@@ -394,6 +394,21 @@ heatmap.4 <- function(x,
   
 }
 
+subtract_matrices <- function(sample_mx, control_mx) {
+    num_of_rows = nrow(sample_mx)
+    num_of_cols = ncol(sample_mx)
+    final_matrix = matrix(, nrow = num_of_rows, num_of_cols)
+    for(row in 1:num_of_rows) {
+        for(col in 1:num_of_cols) {
+            value <- sample_mx[row, col] - control_mx[row, col]
+            if (value < 0) value = 0  
+            final_matrix[row, col] = value
+        }
+    }
+    return(final_matrix)
+}
+
+
 #============================================================================
 #=================================PLOT HEATMAPS==============================
 #============================================================================
@@ -403,6 +418,10 @@ suppressPackageStartupMessages(require(optparse))
 option_list <- list(
     make_option(c("-f", "--folder"), type='character', default="matrix",
         help="Folder containing matrix files generated"),
+    make_option(c("-c", "--control"), type='character', default=NA,
+        help="Folder containing control/input matrix files generated"),
+    make_option(c("-z", "--zip"), action = "store_true", default=FALSE,
+        help="Folder(s) provided are in zipped format"),
     make_option(c("-n", "--name"), type='character', default=NA, 
         help="Sample Name"),
     make_option(c("-d", "--distance"), type='integer', default=2000,
@@ -410,24 +429,75 @@ option_list <- list(
     )
 
 opt = parse_args(OptionParser(option_list=option_list))
-
 if (is.na(opt$n)) {
     stop("Sample Name must be provided. See script usage (--help)")
 }
 
 #ARGS
 folder = opt$f
+unzipped_folder = "UNZIPPED"
 samplename = opt$n
 distance = round(opt$d/1000,1)
 
-#input files
-promoters <- read.table(paste(folder,"/",(dir(folder,pattern="*promoters.txt"))[1],sep=""), sep="\t", header=T);
-upstream <- read.table(paste(folder,"/",(dir(folder,pattern="*upstream.txt"))[1],sep=""), sep="\t", header=T);
-downstream <- read.table(paste(folder,"/",(dir(folder,pattern="*downstream.txt"))[1],sep=""), sep="\t", header=T);
-genebody <- read.table(paste(folder,"/",(dir(folder,pattern="*genebody.txt"))[1],sep=""), sep="\t", header=T);
+
+if (opt$z) {
+    unzip(folder,exdir=unzipped_folder)
+    sample_folder = unzipped_folder
+} else {
+    sample_folder = folder
+}
+
+#sample files
+s_promoters <- read.table(paste(sample_folder,"/",(dir(sample_folder,pattern="*promoters.txt"))[1],sep=""), sep="\t", header=T);
+s_upstream <- read.table(paste(sample_folder,"/",(dir(sample_folder,pattern="*upstream.txt"))[1],sep=""), sep="\t", header=T);
+s_downstream <- read.table(paste(sample_folder,"/",(dir(sample_folder,pattern="*downstream.txt"))[1],sep=""), sep="\t", header=T);
+s_genebody <- read.table(paste(sample_folder,"/",(dir(sample_folder,pattern="*genebody.txt"))[1],sep=""), sep="\t", header=T);
+if (opt$z) { unlink(unzipped_folder, recursive=TRUE) }
+
+s_promoters=s_promoters[,3:ncol(s_promoters)]
+s_upstream=s_upstream[,3:ncol(s_upstream)]
+s_downstream=s_downstream[,3:ncol(s_downstream)]
+s_genebody=s_genebody[,3:ncol(s_genebody)]
+
+if (!is.na(opt$c)) {
+    #input/control file
+    control = opt$c
+    if (opt$z) {
+        unzip(control,exdir=unzipped_folder)
+        control_folder = unzipped_folder
+    } else {
+        control_folder = control
+    }
+
+    #input/control files
+    c_promoters <- read.table(paste(control_folder,"/",(dir(control_folder,pattern="*promoters.txt"))[1],sep=""), sep="\t", header=T);
+    c_upstream <- read.table(paste(control_folder,"/",(dir(control_folder,pattern="*upstream.txt"))[1],sep=""), sep="\t", header=T);
+    c_downstream <- read.table(paste(control_folder,"/",(dir(control_folder,pattern="*downstream.txt"))[1],sep=""), sep="\t", header=T);
+    c_genebody <- read.table(paste(control_folder,"/",(dir(control_folder,pattern="*genebody.txt"))[1],sep=""), sep="\t", header=T);
+    if (opt$z) { unlink(unzipped_folder, recursive=TRUE) }
+
+    c_promoters=c_promoters[,3:ncol(c_promoters)]
+    c_upstream=c_upstream[,3:ncol(c_upstream)]
+    c_downstream=c_downstream[,3:ncol(c_downstream)]
+    c_genebody=c_genebody[,3:ncol(c_genebody)]
+
+    #subtracting matrices
+    promoters = subtract_matrices(s_promoters, c_promoters)
+    upstream = subtract_matrices(s_upstream, c_upstream)
+    downstream = subtract_matrices(s_downstream, c_downstream)
+    genebody = subtract_matrices(s_genebody, c_genebody)
+
+} else {
+    #only sample file provided
+    promoters=s_promoters
+    upstream=s_upstream
+    downstream=s_downstream
+    genebody=s_genebody
+
+}
 
 #combining entire genebody
-combined<-cbind(upstream[,3:ncol(upstream)], genebody[,3:ncol(genebody)], downstream[,3:ncol(downstream)]);
+combined<-cbind(upstream, genebody, downstream);
 
 #removing NA.
 promoters<-na.omit(promoters)
@@ -435,29 +505,32 @@ combined<-na.omit(combined)
 
 #matplot of promoters & genebody
 pdf(paste(samplename, "-promoters.pdf",sep=""))
-matplot(colMeans(promoters[,3:ncol(promoters)]), type='l', main=paste(samplename, "Promoters",sep=" "), ylab="Average normalized mapped reads", xlim=NULL, xaxt='n', xlab="Genomic Region (bp)")
+matplot(colMeans(promoters), type='l', main=paste(samplename, "Promoters",sep=" "), ylab="Average normalized mapped reads", 
+    xlim=NULL, xaxt='n', xlab="Genomic Region (bp)");
 axis(1, at=c(0,50,100), labels=c(paste("-",distance,"kb",sep=""), "TSS", paste("+",distance,"kb",sep="")))
 dev.off();
+
 pdf(paste(samplename, "-entiregene.pdf",sep=""));
-matplot(colMeans(combined),type='l',main=paste(samplename, "MetaGenes",sep=" "), ylab="Average normalized mapped reads", xlim=NULL, xaxt='n', xlab="Genomic Region (bp)");
+matplot(colMeans(combined),type='l', main=paste(samplename, "MetaGenes",sep=" "), ylab="Average normalized mapped reads", 
+    xlim=NULL, xaxt='n', xlab="Genomic Region (bp)");
 axis(1, at=c(0,50,83,116,150,200), labels=c(paste("-",distance,"kb",sep=""), "TSS", "33%","66%", "TES", paste("+",distance,"kb",sep="")));
 dev.off();
 
 #heatmap of promoters & genebody
 
 #extrapolate breaks & colz
-remainder = round((quantile(as.vector(t(promoters[,3:ncol(promoters)])),.80)),digits=0) %% 2;
-finalcount = round((quantile(as.vector(t(promoters[,3:ncol(promoters)])),.80)),digits=0) + remainder;
+remainder = round((quantile(as.vector(t(promoters)),.80)),digits=0) %% 2;
+finalcount = round((quantile(as.vector(t(promoters)),.80)),digits=0) + remainder;
 if (finalcount < 2) { finalcount = 2; } #adjusting for lack of variability in bam density scores
 
 breaks=seq(0,finalcount,by=(finalcount/100));
 colz=colorRampPalette(c("white", "red"))(length(breaks)-1);
 
 png(paste(samplename, "-heatmap.promoters.png", sep=""), type="cairo")
-heatmap.4(promoters[,3:ncol(promoters)], col=colz, breaks=breaks, dendrogram="none", Colv=NA, Rowv=NA, labRow=NA, labCol=NA, xoption="promoters", xlab="Genomic Region (bp)", main=paste(samplename, "Promoters",sep="\n"))
+heatmap.4(promoters, col=colz, breaks=breaks, dendrogram="none", Colv=NA, Rowv=NA, labRow=NA, labCol=NA, xoption="promoters", xlab="Genomic Region (bp)", main=paste(samplename, "Promoters",sep="\n"))
 dev.off()
 pdf(paste(samplename, "-heatmap.promoters.pdf", sep=""))
-heatmap.4(promoters[,3:ncol(promoters)], col=colz, breaks=breaks, dendrogram="none", Colv=NA, Rowv=NA, labRow=NA, labCol=NA, xoption="promoters", xlab="Genomic Region (bp)", main=paste(samplename, "Promoters",sep="\n"))
+heatmap.4(promoters, col=colz, breaks=breaks, dendrogram="none", Colv=NA, Rowv=NA, labRow=NA, labCol=NA, xoption="promoters", xlab="Genomic Region (bp)", main=paste(samplename, "Promoters",sep="\n"))
 dev.off()
 
 remainder = round((quantile(as.vector(t(combined[,3:ncol(combined)])),.80)),digits=0) %% 2
@@ -468,8 +541,8 @@ breaks=seq(0,finalcount,by=(finalcount/100));
 colz=colorRampPalette(c("white", "red"))(length(breaks)-1);
 
 png(paste(samplename, "-heatmap.entiregene.png", sep=""), type="cairo")
-heatmap.4(combined[,3:ncol(combined)], col=colz, breaks=breaks, dendrogram="none", Colv=NA, Rowv=NA, labRow=NA, labCol=NA, xoption="genebody", xlab="Genomic Region (bp)", main=paste(samplename, "MetaGenes",sep="\n"))
+heatmap.4(combined, col=colz, breaks=breaks, dendrogram="none", Colv=NA, Rowv=NA, labRow=NA, labCol=NA, xoption="genebody", xlab="Genomic Region (bp)", main=paste(samplename, "MetaGenes",sep="\n"))
 dev.off()
 pdf(paste(samplename, "-heatmap.entiregene.pdf", sep=""))
-heatmap.4(combined[,3:ncol(combined)], col=colz, breaks=breaks, dendrogram="none", Colv=NA, Rowv=NA, labRow=NA, labCol=NA, xoption="genebody", xlab="Genomic Region (bp)", main=paste(samplename, "MetaGenes",sep="\n"))
+heatmap.4(combined, col=colz, breaks=breaks, dendrogram="none", Colv=NA, Rowv=NA, labRow=NA, labCol=NA, xoption="genebody", xlab="Genomic Region (bp)", main=paste(samplename, "MetaGenes",sep="\n"))
 dev.off()
