@@ -421,11 +421,10 @@ samplename = opt$n
 distance = round(opt$d/1000,1)
 
 #input files
-promoters <- read.table(paste(folder,"/promoters.txt",sep=""), sep="\t", header=T);
-upstream <- read.table(paste(folder,"/upstream.txt",sep=""), sep="\t", header=T);
-downstream <- read.table(paste(folder,"/downstream.txt",sep=""), sep="\t", header=T);
-genebody <- read.table(paste(folder,"/genebody.txt",sep=""), sep="\t", header=T);
-
+promoters <- read.table(paste(folder,"/",(dir(folder,pattern="*promoters.txt"))[1],sep=""), sep="\t", header=T);
+upstream <- read.table(paste(folder,"/",(dir(folder,pattern="*upstream.txt"))[1],sep=""), sep="\t", header=T);
+downstream <- read.table(paste(folder,"/",(dir(folder,pattern="*downstream.txt"))[1],sep=""), sep="\t", header=T);
+genebody <- read.table(paste(folder,"/",(dir(folder,pattern="*genebody.txt"))[1],sep=""), sep="\t", header=T);
 
 #combining entire genebody
 combined<-cbind(upstream[,3:ncol(upstream)], genebody[,3:ncol(genebody)], downstream[,3:ncol(downstream)]);
