@@ -439,6 +439,7 @@ unzipped_folder = "UNZIPPED"
 samplename = opt$n
 distance = round(opt$d/1000,1)
 
+library(animation)
 
 if (opt$z) {
     unzip(folder,exdir=unzipped_folder)
@@ -522,27 +523,21 @@ dev.off();
 remainder = round((quantile(as.vector(t(promoters)),.80)),digits=0) %% 2;
 finalcount = round((quantile(as.vector(t(promoters)),.80)),digits=0) + remainder;
 if (finalcount < 2) { finalcount = 2; } #adjusting for lack of variability in bam density scores
-
 breaks=seq(0,finalcount,by=(finalcount/100));
 colz=colorRampPalette(c("white", "red"))(length(breaks)-1);
 
-png(paste(samplename, "-heatmap.promoters.png", sep=""), type="cairo")
-heatmap.4(promoters, col=colz, breaks=breaks, dendrogram="none", Colv=NA, Rowv=NA, labRow=NA, labCol=NA, xoption="promoters", xlab="Genomic Region (bp)", main=paste(samplename, "Promoters",sep="\n"))
-dev.off()
 pdf(paste(samplename, "-heatmap.promoters.pdf", sep=""))
 heatmap.4(promoters, col=colz, breaks=breaks, dendrogram="none", Colv=NA, Rowv=NA, labRow=NA, labCol=NA, xoption="promoters", xlab="Genomic Region (bp)", main=paste(samplename, "Promoters",sep="\n"))
 dev.off()
+im.convert(paste(samplename, "-heatmap.promoters.pdf", sep=""), output = paste(samplename, "-heatmap.promoters.jpg", sep=""), extra.opts="-density 300")
 
 remainder = round((quantile(as.vector(t(combined[,3:ncol(combined)])),.80)),digits=0) %% 2
 finalcount = round((quantile(as.vector(t(combined[,3:ncol(combined)])),.80) + remainder),digits=0) + remainder
 if (finalcount < 2) { finalcount = 2; } #adjusting for lack of variability in bam density scores
-
 breaks=seq(0,finalcount,by=(finalcount/100));
 colz=colorRampPalette(c("white", "red"))(length(breaks)-1);
 
-png(paste(samplename, "-heatmap.entiregene.png", sep=""), type="cairo")
-heatmap.4(combined, col=colz, breaks=breaks, dendrogram="none", Colv=NA, Rowv=NA, labRow=NA, labCol=NA, xoption="genebody", xlab="Genomic Region (bp)", main=paste(samplename, "MetaGenes",sep="\n"))
-dev.off()
 pdf(paste(samplename, "-heatmap.entiregene.pdf", sep=""))
 heatmap.4(combined, col=colz, breaks=breaks, dendrogram="none", Colv=NA, Rowv=NA, labRow=NA, labCol=NA, xoption="genebody", xlab="Genomic Region (bp)", main=paste(samplename, "MetaGenes",sep="\n"))
 dev.off()
+im.convert(paste(samplename, "-heatmap.entiregene.pdf", sep=""), output = paste(samplename, "-heatmap.entiregene.jpg", sep=""), extra.opts="-density 300")
