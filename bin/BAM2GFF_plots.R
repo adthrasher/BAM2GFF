@@ -439,7 +439,11 @@ unzipped_folder = "UNZIPPED"
 samplename = opt$n
 distance = round(opt$d/1000,1)
 
-library(animation)
+#library(animation)
+# animation package is not used because it has ImageMagick dependency which is complicated to install on ubuntu docker. 
+# using pdftools
+
+library(pdftools)
 
 if (opt$z) {
     unzip(folder,exdir=unzipped_folder)
@@ -529,7 +533,10 @@ colz=colorRampPalette(c("white", "red"))(length(breaks)-1);
 pdf(paste(samplename, "-heatmap.promoters.pdf", sep=""))
 heatmap.4(promoters, col=colz, breaks=breaks, dendrogram="none", Colv=NA, Rowv=NA, labRow=NA, labCol=NA, xoption="promoters", xlab="Genomic Region (bp)", main=paste(samplename, "Promoters",sep="\n"))
 dev.off()
-im.convert(paste(samplename, "-heatmap.promoters.pdf", sep=""), output = paste(samplename, "-heatmap.promoters.jpg", sep=""), extra.opts="-density 300")
+
+png::writePNG(pdf_render_page(paste(samplename, "-heatmap.promoters.pdf", sep=""),page=1,dpi=300), paste(samplename, "-heatmap.promoters.png2", sep=""))
+jpeg::writeJPEG(pdf_render_page(paste(samplename, "-heatmap.promoters.pdf", sep=""),page=1,dpi=300), paste(samplename, "-heatmap.promoters.jpg", sep=""))
+#im.convert(paste(samplename, "-heatmap.promoters.pdf", sep=""), output = paste(samplename, "-heatmap.promoters.jpg", sep=""), extra.opts="-density 300")
 
 remainder = round((quantile(as.vector(t(combined[,3:ncol(combined)])),.80)),digits=0) %% 2
 finalcount = round((quantile(as.vector(t(combined[,3:ncol(combined)])),.80) + remainder),digits=0) + remainder
@@ -540,4 +547,7 @@ colz=colorRampPalette(c("white", "red"))(length(breaks)-1);
 pdf(paste(samplename, "-heatmap.entiregene.pdf", sep=""))
 heatmap.4(combined, col=colz, breaks=breaks, dendrogram="none", Colv=NA, Rowv=NA, labRow=NA, labCol=NA, xoption="genebody", xlab="Genomic Region (bp)", main=paste(samplename, "MetaGenes",sep="\n"))
 dev.off()
-im.convert(paste(samplename, "-heatmap.entiregene.pdf", sep=""), output = paste(samplename, "-heatmap.entiregene.jpg", sep=""), extra.opts="-density 300")
+
+png::writePNG(pdf_render_page(paste(samplename, "-heatmap.entiregene.pdf", sep=""),page=1,dpi=300), paste(samplename, "-heatmap.entiregene.png2", sep=""))
+jpeg::writeJPEG(pdf_render_page(paste(samplename, "-heatmap.entiregene.pdf", sep=""),page=1,dpi=300), paste(samplename, "-heatmap.entiregene.jpg", sep=""))
+#im.convert(paste(samplename, "-heatmap.entiregene.pdf", sep=""), output = paste(samplename, "-heatmap.entiregene.jpg", sep=""), extra.opts="-density 300")
