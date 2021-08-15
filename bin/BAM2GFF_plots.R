@@ -447,8 +447,6 @@ distance = round(opt$d/1000,1)
 # animation package is not used because it has ImageMagick dependency which is complicated to install on ubuntu docker. 
 # using pdftools (https://docs.ropensci.org/pdftools/)
 
-library(pdftools)
-
 if (opt$z) {
     unzip(folder,exdir=unzipped_folder)
     sample_folder = unzipped_folder
@@ -549,6 +547,7 @@ heatmap.4(combined, col=colz, breaks=breaks, dendrogram="none", Colv=NA, Rowv=NA
 dev.off()
 
 #creating pngs or jpg from pdf
+library(pdftools)
 png::writePNG(pdf_render_page(paste(samplename, "-heatmap.promoters.pdf", sep=""),page=1,dpi=300), paste(samplename, "-heatmap.promoters.png", sep=""))
 png::writePNG(pdf_render_page(paste(samplename, "-heatmap.entiregene.pdf", sep=""),page=1,dpi=300), paste(samplename, "-heatmap.entiregene.png", sep=""))
 
