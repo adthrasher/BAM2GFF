@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #bamToGFF.py
 # modified for python3 #1/8/20
- 
+
 '''
 The MIT License (MIT)
 Copyright (c) 2013 Charles Lin
@@ -48,7 +48,6 @@ def parseSamHeader(samFile):
     return samDict
 
 
-
 #THIS FUNCTION USED TO TRY TO LOOK UP THE UNIQUE NUMBER OF READS OR COMPUTE IT BUT WAS LATER EDITED
 #BRIAN BEING THAT GUY, YOU CAN FIX IT UP AND MAKE IT FIND YOUR UNIQUE MMR
 def getUniquelyMappingReads(bamFile):
@@ -57,7 +56,7 @@ def getUniquelyMappingReads(bamFile):
     scripts designed to return the total number of uniquely mapping sequence tags from a bam file,
     first by looking for a corresponding stats file in the folder, and second by manually computing the number.
     '''
-    
+
     #a uniquely mapping sequence tag is defined by collapsing all tags that map to the exact same location with the exact same sequence
 
     #first try to extract the number from a stats file
@@ -79,9 +78,6 @@ def getUniquelyMappingReads(bamFile):
     else:
         print(('no precomputed stats file found for %s.' % (bamFile)))
         return None
-        
-        
-
 
 
 def mapBamToGFF(bamFile,gff,sense = 'both',unique = 0,extension = 200,floor = 0,density = False,rpm = False,binSize = 25,clusterGram = None,matrix = None,raw = False,includeJxnReads = False):
@@ -99,14 +95,13 @@ def mapBamToGFF(bamFile,gff,sense = 'both',unique = 0,extension = 200,floor = 0,
         density = True
     #new GFF to write to
     newGFF = []
+
     #millionMappedReads
-
-
     #SECTION CHANGED FOR BRIAN BEING THAT GUY
     if float(unique) == 0.0:
         unique = False
-        if rpm:    
-            MMR= round(float(bam.getTotalReads('mapped'))/1000000,4)
+        if rpm:
+            MMR = round(float(bam.getTotalReads('mapped'))/1000000,4)
         else:
             MMR = 1
     else:
@@ -117,17 +112,19 @@ def mapBamToGFF(bamFile,gff,sense = 'both',unique = 0,extension = 200,floor = 0,
             MMR = 1
         unique = True
 
-    print(('using a MMR value of %s' % (MMR)))
-    
+    print('using a MMR value of %s' % (MMR))
+
     if type(gff) == str:
         gff = parseTable(gff,'\t')
+
+    print("Read gff file")
 
     #setting up a clustergram table
     if clusterGram:
         #first grab a header line
         line = gff[0]
         gffLocus = Locus(line[0],int(line[3]),int(line[4]),line[6],line[1])
-        
+
         nBins = gffLocus.len()/binSize
         binSizeList = [nBins]
 
@@ -137,13 +134,13 @@ def mapBamToGFF(bamFile,gff,sense = 'both',unique = 0,extension = 200,floor = 0,
             gffLocus = Locus(line[0],int(line[3]),int(line[4]),line[6],line[1])
             binSizeList.append(gffLocus.len()/binSize)
         binSizeList = uniquify(binSizeList)
-        if len(binSizeList) > 1: 
+        if len(binSizeList) > 1:
             print('WARNING: lines in gff are of different length. Output clustergram will have variable row length')
-        newGFF.append(['GENE_ID','locusLine'] + [str(x*binSize)+'_'+bamFile.split('/')[-1] for x in range(1,max(binSizeList)+1,1)])        
-        
-    #setting up a maxtrix table
+        newGFF.append(['GENE_ID','locusLine'] + [str(x*binSize)+'_'+bamFile.split('/')[-1] for x in range(1,max(binSizeList)+1,1)])
+
+    #setting up a matrix table
     if matrix:
-        newGFF.append(['GENE_ID','locusLine'] + ['bin_'+str(n)+'_'+bamFile.split('/')[-1] for n in range(1,int(matrix)+1,1)])        
+        newGFF.append(['GENE_ID','locusLine'] + ['bin_'+str(n)+'_'+bamFile.split('/')[-1] for n in range(1,int(matrix)+1,1)])
 
     #getting and processing reads for gff lines
     ticker = 0
@@ -153,10 +150,11 @@ def mapBamToGFF(bamFile,gff,sense = 'both',unique = 0,extension = 200,floor = 0,
         if ticker%100 == 0:
             print(ticker)
         ticker+=1
+        #each locus
         gffLocus = Locus(line[0],int(line[3]),int(line[4]),line[6],line[1])
-        searchLocus = makeSearchLocus(gffLocus,int(extension),int(extension))
-        
-        reads = bam.getReadsLocus(searchLocus,'both',unique,'none',includeJxnReads)
+        searchLocus = makeSearchLocus(gffLocus,int(extension),int(extension)) #extends locus by extension (both sides)
+        reads = bam.getReadsLocus(searchLocus,'both',unique,'none',includeJxnReads) #get bam reads that mapped to the searchlocus
+
         #now extend the reads and make a list of extended reads
         extendedReads = []
         for locus in reads:
@@ -165,35 +163,34 @@ def mapBamToGFF(bamFile,gff,sense = 'both',unique = 0,extension = 200,floor = 0,
             if locus.sense() == '-':
                 locus = Locus(locus.chr(),locus.start()-extension,locus.end(),locus.sense(),locus.ID())
             extendedReads.append(locus)
+
         if gffLocus.sense() == '+' or gffLocus.sense == '.':
             senseReads = [x for x in extendedReads if x.sense() == '+' or x.sense() == '.']
             antiReads = [x for x in extendedReads if x.sense() == '-']
         else:
             senseReads = [x for x in extendedReads if x.sense() == '-' or x.sense() == '.']
             antiReads = [x for x in extendedReads if x.sense() == '+']
-    
+
         #at this point can output starts onto the GFF unless density is called
 
         if density:
-
             senseHash = defaultdict(int)
             antiHash = defaultdict(int)
 
-            #filling in the readHashes             
+            #filling in the readHashes
             if sense == '+' or sense == 'both' or sense =='.':
                 for read in senseReads:
                     for x in range(read.start(),read.end()+1,1):
                         senseHash[x]+=1
             if sense == '-' or sense == 'both' or sense == '.':
-                #print('foo')
                 for read in antiReads:
                     for x in range(read.start(),read.end()+1,1):
                         antiHash[x]+=1
 
             #now apply flooring and filtering for coordinates
             keys = uniquify(list(senseHash.keys())+list(antiHash.keys()))
+
             if floor > 0:
-                    
                 keys = [x for x in keys if (senseHash[x]+antiHash[x]) > floor]
             #coordinate filtering
             keys = [x for x in keys if gffLocus.start() < x < gffLocus.end()]
@@ -212,11 +209,11 @@ def mapBamToGFF(bamFile,gff,sense = 'both',unique = 0,extension = 200,floor = 0,
                 n=0
                 if gffLocus.sense() == '+' or gffLocus.sense() =='.' or gffLocus.sense() == 'both':
                     i = gffLocus.start()
-                    
+
                     while n <nBins:
                         n+=1
                         binKeys = [x for x in keys if i < x < i+binSize]
-                        binDen = float(sum([senseHash[x]+antiHash[x] for x in binKeys]))/binSize
+                        binDen = float(sum([senseHash[x]+antiHash[x] for x in binKeys]))/binSize #number of reads mapped to the binSize
                         clusterLine+=[round(binDen/MMR,4)]
                         i = i+binSize
                 else:
@@ -228,7 +225,7 @@ def mapBamToGFF(bamFile,gff,sense = 'both',unique = 0,extension = 200,floor = 0,
                         clusterLine+=[round(binDen/MMR,4)]
                         i = i-binSize
                 newGFF.append(clusterLine)
-        
+
             #for regular old density calculation
             else:
                 senseTotalDen = float(sum([senseHash[x] for x in keys]))/gffLocus.len()
@@ -245,8 +242,8 @@ def mapBamToGFF(bamFile,gff,sense = 'both',unique = 0,extension = 200,floor = 0,
                     readLine = '+'+':%s' % (round(senseTotalDen,4))
                 elif sense == '-':
                     readLine = '-' + ':%s' % (round(antiTotalDen,4))
-                newGFF.append(line + [readLine])             
-        #if not cluster or density simply return reads 
+                newGFF.append(line + [readLine])
+        #if not cluster or density simply return reads
         elif raw:
             if sense == 'both' or sense == '.':
                 if gffLocus.sense() == '+' or gffLocus.sense() == '.':
@@ -260,26 +257,17 @@ def mapBamToGFF(bamFile,gff,sense = 'both',unique = 0,extension = 200,floor = 0,
             newGFF.append(line+[readLine])
         #if not raw and not density gives total
         else:
-
-
             if sense == 'both' or sense == '.':
-                readLine = str((len(antiReads) + len(senseReads))/MMR)   
+                readLine = str((len(antiReads) + len(senseReads))/MMR)
             elif sense == '+':
                 readLine = str(len(senseReads)/MMR)
             elif sense == '-':
                 readLine = str(len(antiReads)/MMR)
             newGFF.append(line+[readLine])
-            
+
     return newGFF
-        
-                
-                
-            
 
 
-            
-                
-    
 def convertEnrichedRegionsToGFF(enrichedRegionFile):
     '''converts a young lab enriched regions file into a gff'''
     newGFF = []
@@ -293,7 +281,7 @@ def convertEnrichedRegionsToGFF(enrichedRegionFile):
         i+=1
     return newGFF
 
-        
+
 #python bamToGFF.py --density --floor 0 -b test.sam.sorted.bam -g pol2_sample.gff -o pol2_sample_mapped.gff
 
 def main():
@@ -316,7 +304,7 @@ def main():
     parser.add_option("-d","--density", dest="density",action='store_true', default=False,
                       help = "Calculates a read density for each region, returns a single value per region")
     parser.add_option("-f","--floor", dest="floor",nargs =1, default=0,
-                      help = "Sets a read floor threshold necessary to count towards density")    
+                      help = "Sets a read floor threshold necessary to count towards density")
     parser.add_option("-e","--extension", dest="extension",nargs = 1, default=200,
                       help = "Extends reads by n bp. Default value is 200bp")
     parser.add_option("-r","--rpm", dest="rpm",action = 'store_true', default=False,
@@ -349,7 +337,7 @@ def main():
             print('ERROR: no associated .bai file found with bam. Must use a sorted bam with accompanying index file')
             parser.print_help()
             exit()
-   
+
     if options.sense:
         if ['+','-','.','both'].count(options.sense) == 0:
             print('ERROR: sense flag must be followed by +,-,.,both')
@@ -368,7 +356,7 @@ def main():
             print('ERROR: User must specify an integer bin number for matrix (try 50)')
             parser.print_help()
             exit()
-            
+
     if options.cluster:
         try:
             int(options.cluster)
@@ -377,8 +365,6 @@ def main():
             parser.print_help()
             exit()
 
-    
-    
     if options.input and options.bam:
         inputFile = options.input
         if inputFile.split('.')[-1] != 'gff':
@@ -388,7 +374,7 @@ def main():
             gffFile = inputFile
 
         bamFile = options.bam
-        
+
         if options.output == None:
             output = os.getcwd() + inputFile.split('/')[-1]+'.mapped'
         else:
@@ -399,41 +385,38 @@ def main():
         elif options.matrix:
             print('mapping to GFF and making a matrix with fixed bin number')
             newGFF = mapBamToGFF(bamFile,gffFile,options.sense,options.unique,int(options.extension),options.floor,options.density,options.rpm,25,None,options.matrix,False,options.jxn)
-            
+
         else:
             print('mapping to GFF and returning reads')
             if options.total:
-
                 newGFF = mapBamToGFF(bamFile,gffFile,options.sense,options.unique,int(options.extension),options.floor,options.density,options.rpm,25,None,None,False,options.jxn)
             else:
                 newGFF = mapBamToGFF(bamFile,gffFile,options.sense,options.unique,int(options.extension),options.floor,options.density,options.rpm,25,None,None,True)
-        
+
         #changing to a sorted file based on read sum
         linenumber = 1
         NEWcontent = {}
         otherGFF = []
         otherGFF.append(newGFF[0])
-        
+
         for line in newGFF[1:]:
             summation = 0
             for column in line[2:]:
                 if column == "NA":
                     column = 0
-                summation = column + summation
-            linenumber = linenumber + 1
+                summation += column
+            linenumber += 1
             if summation not in NEWcontent:
                 NEWcontent[summation] = {}
             NEWcontent[summation][linenumber] = line
-        
+
         for each, content in sorted(list(NEWcontent.items()), reverse=True):
             for key in content:
-                otherGFF.append(content[key]) 
+                otherGFF.append(content[key])
         unParseTable(otherGFF,output,'\t')
     else:
         parser.print_help()
-        
 
-        
- 
+
 if __name__ == "__main__":
     main()

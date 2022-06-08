@@ -50,6 +50,8 @@ def parse_genelocations(chromz, results, flank):
         upend = chromz[lines[0]]
     if downend > int(chromz[lines[0]]):
         downend = chromz[lines[0]]
+    if end > int(chromz[lines[0]]):
+        end = chromz[lines[0]]
 
     PROMOTERSGFF.write("{0}\t{1}\t{2}\t{3}\n".format("\t".join(lines[0:3]),
                                                      start, end, "\t".join(lines[5:])))
@@ -156,4 +158,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
