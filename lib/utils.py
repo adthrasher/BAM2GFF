@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 #SET OF GENERAL UTILITY FUNCTIONS FOR SEQ DATA
 #last modified 141217
-# modified for python3 #1/8/20 
+# modified for python3 #1/8/20
+# fixed MMR calculation #6/6/22
 
 #please edit this to the location of the samtools program
 samtoolsString ='samtools'
@@ -310,7 +311,7 @@ def getParentFolder(inputFile):
 
 def makeStartDict(annotFile, geneList=[]):
     '''
-    makes a dictionary keyed by refseq ID that contains information about 
+    makes a dictionary keyed by refseq ID that contains information about
     chrom/start/stop/strand/common name
     '''
 
@@ -506,19 +507,19 @@ def nameToRefseq(geneNamesList,annotFile,unique=True):
     return newTable
 
 
-#06/11/09                                                                                                                              
-#import bound region                                                                                                                   
-#imports a bound region file and turns it into a locus collection                                                                      
-#bound region files are output by my pipeline as Name_boundFile.txt files                                                              
+#06/11/09
+#import bound region
+#imports a bound region file and turns it into a locus collection
+#bound region files are output by my pipeline as Name_boundFile.txt files
 def importBoundRegion(boundRegionFile,name):
-    '''                                                                                                                                
-    imports bound regions in either bed format or in error model format                                                                
+    '''
+    imports bound regions in either bed format or in error model format
     '''
 
     bound = parseTable(boundRegionFile,'\t')
     lociList = []
     ticker = 1
-    #                                                                                                                                  
+    #
     if boundRegionFile.split('.')[-1] == 'bed':
         bed = True
     else:
@@ -793,7 +794,7 @@ class LocusCollection:
         returns a new collection
         '''
 
-        #initializing stitchWindow to 1 
+        #initializing stitchWindow to 1
         #this helps collect directly adjacent loci
 
 
@@ -1090,11 +1091,11 @@ class Bam:
         stats.stdout.close()
         if readType == 'mapped':
             for line in statLines:
+                line = str(line)
                 if line.count('mapped (') == 1:
-
-                    return int(line.split(' ')[0])
+                    return int(line.strip('b\'').split(' ')[0]) #fixed byte-type error
         if readType == 'total':
-            return int(statLines[0].split(' ')[0])
+            return int(str(statLines[0]).strip('b\'').split(' ')[0]) #fixed byte-type error
 
     def convertBitwiseFlag(self,flag):
         if flag & 16:
@@ -1110,6 +1111,7 @@ class Bam:
         locusLine = locus.chr()+':'+str(locus.start())+'-'+str(locus.end())
 
         command = '%s view %s %s' % (samtoolsString,self._bam,locusLine)
+
         if printCommand:
             print(command)
         getReads = subprocess.Popen(command,stdin = subprocess.PIPE,stderr = subprocess.PIPE,stdout = subprocess.PIPE,shell = True)
@@ -1117,6 +1119,7 @@ class Bam:
         reads = reads[0].decode("utf-8")
         reads = reads.split('\n')[:-1]
         reads = [read.split('\t') for read in reads]
+
         if includeJxnReads == False:
             reads = [x for x in reads if x[5].count('N') < 1]
 

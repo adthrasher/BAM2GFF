@@ -49,7 +49,7 @@ heatmap.4 <- function(x,
                       NumColSideColors = 1,
                       NumRowSideColors = 1,
                       KeyValueName="Value",...){
-  
+
   invalid <- function (x) {
     if (missing(x) || is.null(x) || length(x) == 0)
       return(TRUE)
@@ -59,7 +59,7 @@ heatmap.4 <- function(x,
       return(all(is.na(x)))
     else return(FALSE)
   }
-  
+
   x <- as.matrix(x)
   scale01 <- function(x, low = min(x), high = max(x)) {
     x <- (x - low)/(high - low)
@@ -230,7 +230,7 @@ heatmap.4 <- function(x,
     lwid <- c(keysize, 4)
   if (missing(lmat) || is.null(lmat)) {
     lmat <- rbind(4:3, 2:1)
-    
+
     if (!missing(ColSideColors)) {
       #if (!is.matrix(ColSideColors))
       #stop("'ColSideColors' must be a matrix")
@@ -240,7 +240,7 @@ heatmap.4 <- function(x,
       #lhei <- c(lhei[1], 0.2, lhei[2])
       lhei=c(lhei[1], side.height.fraction*NumColSideColors, lhei[2])
     }
-    
+
     if (!missing(RowSideColors)) {
       #if (!is.matrix(RowSideColors))
       #stop("'RowSideColors' must be a matrix")
@@ -252,16 +252,16 @@ heatmap.4 <- function(x,
     }
     lmat[is.na(lmat)] <- 0
   }
-  
+
   if (length(lhei) != nrow(lmat))
     stop("lhei must have length = nrow(lmat) = ", nrow(lmat))
   if (length(lwid) != ncol(lmat))
     stop("lwid must have length = ncol(lmat) =", ncol(lmat))
   op <- par(no.readonly = TRUE)
   on.exit(par(op))
-  
+
   layout(lmat, widths = lwid, heights = lhei, respect = FALSE)
-  
+
   if (!missing(RowSideColors)) {
     if (!is.matrix(RowSideColors)){
       par(mar = c(margins[1], 0, 0, 0.5))
@@ -284,9 +284,9 @@ heatmap.4 <- function(x,
       }
     }
   }
-  
+
   if (!missing(ColSideColors)) {
-    
+
     if (!is.matrix(ColSideColors)){
       par(mar = c(0.5, 0, 0, margins[2]))
       image(cbind(1:nc), col = ColSideColors[colInd], axes = FALSE)
@@ -308,7 +308,7 @@ heatmap.4 <- function(x,
       }
     }
   }
-  
+
   par(mar = c(margins[1], 0, 0, margins[2]))
   x <- t(x)
   cellnote <- t(cellnote)
@@ -376,7 +376,7 @@ heatmap.4 <- function(x,
     tmpbreaks <- breaks
     min.raw <- min(x, na.rm = TRUE)
     max.raw <- max(x, na.rm = TRUE)
-    
+
     z <- seq(min.raw, max.raw, length = length(col))
     image(z = matrix(z, ncol = 1), col = col, breaks = tmpbreaks,
           xaxt = "n", yaxt = "n")
@@ -391,7 +391,7 @@ heatmap.4 <- function(x,
   retval$colorTable <- data.frame(low = retval$breaks[-length(retval$breaks)],
                                   high = retval$breaks[-1], color = retval$col)
   invisible(retval)
-  
+
 }
 
 #============================================================================
@@ -405,11 +405,35 @@ subtract_matrices <- function(sample_mx, control_mx) {
     for(row in 1:num_of_rows) {
         for(col in 1:num_of_cols) {
             value <- sample_mx[row, col] - control_mx[row, col]
-            if (value < 0) value = 0  
+            if (value < 0) value = 0
             final_matrix[row, col] = value
         }
     }
     return(final_matrix)
+}
+
+#============================================================================
+#=======================POSITION WEIGHTED SUMMATION CODE=====================
+#============================================================================
+
+pws <- function(df_input) {
+  limit = length(df_input) / 2
+  final_summation = 0
+
+  for (r in 1:length(df_input[,1])){
+    weight = limit
+    summation = 0
+    row_sum = 0
+
+    for (c in 1:length(df_input[1,])){
+      row_sum = row_sum + df_input[r,c]
+      summation = summation + (df_input[r,c] * abs(weight/limit))
+      weight = weight - 1
+      if (weight == 0) { weight = -1}
+    }
+    final_summation[r] = summation
+  }
+  return(final_summation)
 }
 
 
@@ -426,7 +450,9 @@ option_list <- list(
         help="Folder containing control/input matrix files generated"),
     make_option(c("-z", "--zip"), action = "store_true", default=FALSE,
         help="Folder(s) provided are in zipped format"),
-    make_option(c("-n", "--name"), type='character', default=NA, 
+    make_option(c("-r", "--rpm"), action = "store_true", default=FALSE,
+        help="results are normalized in RPM, for proper notation of y-axis"),
+    make_option(c("-n", "--name"), type='character', default=NA,
         help="Sample Name"),
     make_option(c("-d", "--distance"), type='integer', default=2000,
         help="Distance (bp) from TSS/TES")
@@ -444,7 +470,7 @@ samplename = opt$n
 distance = round(opt$d/1000,1)
 
 #library(animation)
-# animation package is not used because it has ImageMagick dependency which is complicated to install on ubuntu docker. 
+# animation package is not used because it has ImageMagick dependency which is complicated to install on ubuntu docker.
 # using pdftools (https://docs.ropensci.org/pdftools/)
 
 if (opt$z) {
@@ -452,6 +478,10 @@ if (opt$z) {
     sample_folder = unzipped_folder
 } else {
     sample_folder = folder
+}
+rpm = ""
+if (opt$r) {
+    rpm = "per million"
 }
 
 #sample files
@@ -510,15 +540,30 @@ combined<-cbind(upstream, genebody, downstream);
 promoters<-na.omit(promoters)
 combined<-na.omit(combined)
 
+#ordering the rows
+#p_sums = rowSums(promoters) #using sums of rows to sort
+p_sums = pws(promoters) #using pws to sort
+
+promoters_new <- cbind(promoters, p_sums)
+promoters_sum <- promoters_new[order(-p_sums),]
+promoters <- promoters_sum[,1:100]
+
+#c_sums = rowSums(combined) #using sums of rows to sort
+c_sums = pws(combined) #using pws to sort
+
+combined_new <- cbind(combined, c_sums)
+combined_sum <- combined_new[order(-c_sums),]
+combined <- combined_sum[,1:200]
+
 #matplot of promoters & genebody
 pdf(paste(samplename, "-promoters.pdf",sep=""))
-matplot(colMeans(promoters), type='l', main=paste(samplename, "Promoters",sep=" "), ylab="Average normalized mapped reads", 
+matplot(colMeans(promoters), type='l', main=paste(samplename, "Promoters",sep=" "), ylab=paste("Average normalized mapped reads", rpm, sep=" "),
     xlim=NULL, xaxt='n', xlab="Genomic Region (bp)");
 axis(1, at=c(0,50,100), labels=c(paste("-",distance,"kb",sep=""), "TSS", paste("+",distance,"kb",sep="")))
 dev.off();
 
 pdf(paste(samplename, "-entiregene.pdf",sep=""));
-matplot(colMeans(combined),type='l', main=paste(samplename, "MetaGenes",sep=" "), ylab="Average normalized mapped reads", 
+matplot(colMeans(combined),type='l', main=paste(samplename, "MetaGenes",sep=" "), ylab=paste("Average normalized mapped reads", rpm, sep=" "),
     xlim=NULL, xaxt='n', xlab="Genomic Region (bp)");
 axis(1, at=c(0,50,83,116,150,200), labels=c(paste("-",distance,"kb",sep=""), "TSS", "33%","66%", "TES", paste("+",distance,"kb",sep="")));
 dev.off();
@@ -553,7 +598,3 @@ png::writePNG(pdf_render_page(paste(samplename, "-heatmap.entiregene.pdf", sep="
 
 jpeg::writeJPEG(pdf_render_page(paste(samplename, "-heatmap.promoters.pdf", sep=""),page=1,dpi=300), paste(samplename, "-heatmap.promoters.jpg", sep=""))
 jpeg::writeJPEG(pdf_render_page(paste(samplename, "-heatmap.entiregene.pdf", sep=""),page=1,dpi=300), paste(samplename, "-heatmap.entiregene.jpg", sep=""))
-
-#library(animation) #not used because it requires a lot of C++ packages that couldn't be easily found for the docker image
-#im.convert(paste(samplename, "-heatmap.promoters.pdf", sep=""), output = paste(samplename, "-heatmap.promoters.jpg", sep=""), extra.opts="-density 300")
-#im.convert(paste(samplename, "-heatmap.entiregene.pdf", sep=""), output = paste(samplename, "-heatmap.entiregene.jpg", sep=""), extra.opts="-density 300")
