@@ -412,6 +412,30 @@ subtract_matrices <- function(sample_mx, control_mx) {
     return(final_matrix)
 }
 
+#============================================================================
+#=======================POSITION WEIGHTED SUMMATION CODE=====================
+#============================================================================
+
+pws <- function(df_input) {
+  limit = length(df_input) / 2
+  final_summation = 0
+
+  for (r in 1:length(df_input[,1])){
+    weight = limit
+    summation = 0
+    row_sum = 0
+
+    for (c in 1:length(df_input[1,])){
+      row_sum = row_sum + df_input[r,c]
+      summation = summation + (df_input[r,c] * abs(weight/limit))
+      weight = weight - 1
+      if (weight == 0) { weight = -1}
+    }
+    final_summation[r] = summation
+  }
+  return(final_summation)
+}
+
 
 #============================================================================
 #=================================PLOT HEATMAPS==============================
@@ -516,6 +540,21 @@ combined<-cbind(upstream, genebody, downstream);
 promoters<-na.omit(promoters)
 combined<-na.omit(combined)
 
+#ordering the rows
+#p_sums = rowSums(promoters) #using sums of rows to sort
+p_sums = pws(promoters) #using pws to sort
+
+promoters_new <- cbind(promoters, p_sums)
+promoters_sum <- promoters_new[order(-p_sums),]
+promoters <- promoters_sum[,1:100]
+
+#c_sums = rowSums(combined) #using sums of rows to sort
+c_sums = pws(combined) #using pws to sort
+
+combined_new <- cbind(combined, c_sums)
+combined_sum <- combined_new[order(-c_sums),]
+combined <- combined_sum[,1:200]
+
 #matplot of promoters & genebody
 pdf(paste(samplename, "-promoters.pdf",sep=""))
 matplot(colMeans(promoters), type='l', main=paste(samplename, "Promoters",sep=" "), ylab=paste("Average normalized mapped reads", rpm, sep=" "),
@@ -559,7 +598,3 @@ png::writePNG(pdf_render_page(paste(samplename, "-heatmap.entiregene.pdf", sep="
 
 jpeg::writeJPEG(pdf_render_page(paste(samplename, "-heatmap.promoters.pdf", sep=""),page=1,dpi=300), paste(samplename, "-heatmap.promoters.jpg", sep=""))
 jpeg::writeJPEG(pdf_render_page(paste(samplename, "-heatmap.entiregene.pdf", sep=""),page=1,dpi=300), paste(samplename, "-heatmap.entiregene.jpg", sep=""))
-
-#library(animation) #not used because it requires a lot of C++ packages that couldn't be easily found for the docker image
-#im.convert(paste(samplename, "-heatmap.promoters.pdf", sep=""), output = paste(samplename, "-heatmap.promoters.jpg", sep=""), extra.opts="-density 300")
-#im.convert(paste(samplename, "-heatmap.entiregene.pdf", sep=""), output = paste(samplename, "-heatmap.entiregene.jpg", sep=""), extra.opts="-density 300")

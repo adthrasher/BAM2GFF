@@ -160,8 +160,10 @@ def mapBamToGFF(bamFile,gff,sense = 'both',unique = 0,extension = 200,floor = 0,
         for locus in reads:
             if locus.sense() == '+' or locus.sense() == '.':
                 locus = Locus(locus.chr(),locus.start(),locus.end()+extension,locus.sense(), locus.ID())
+                #locus = Locus(locus.chr(),locus.start()-int(extension/2),locus.end()+int(extension/2),locus.sense(), locus.ID())
             if locus.sense() == '-':
                 locus = Locus(locus.chr(),locus.start()-extension,locus.end(),locus.sense(),locus.ID())
+                #locus = Locus(locus.chr(),locus.start()-int(extension/2),locus.end()+int(extension/2),locus.sense(),locus.ID())
             extendedReads.append(locus)
 
         if gffLocus.sense() == '+' or gffLocus.sense == '.':
@@ -394,26 +396,38 @@ def main():
                 newGFF = mapBamToGFF(bamFile,gffFile,options.sense,options.unique,int(options.extension),options.floor,options.density,options.rpm,25,None,None,True)
 
         #changing to a sorted file based on read sum
-        linenumber = 1
-        NEWcontent = {}
-        otherGFF = []
-        otherGFF.append(newGFF[0])
-
-        for line in newGFF[1:]:
-            summation = 0
-            for column in line[2:]:
-                if column == "NA":
-                    column = 0
-                summation += column
-            linenumber += 1
-            if summation not in NEWcontent:
-                NEWcontent[summation] = {}
-            NEWcontent[summation][linenumber] = line
-
-        for each, content in sorted(list(NEWcontent.items()), reverse=True):
-            for key in content:
-                otherGFF.append(content[key])
-        unParseTable(otherGFF,output,'\t')
+        # linenumber = 1
+        # NEWcontent = {}
+        # otherGFF = []
+        # otherGFF.append(newGFF[0])
+        #
+        # for line in newGFF[1:]:
+        #     limit = int(len(line[2:])/2)
+        #     weight = limit
+        #     summation = 0
+        #     row_sum = 0
+        #     for column in line[2:]:
+        #         if column == "NA":
+        #             column = 0
+        #
+        #         #ranking by position weight
+        #         weightedValue = abs(weight/limit)
+        #         weight -= 1
+        #         if weight == 0:
+        #             weight = -1
+        #         row_sum += float(column)
+        #         summation += float(column) * weightedValue
+        #
+        #     linenumber += 1
+        #     if summation not in NEWcontent:
+        #         NEWcontent[summation] = {}
+        #     NEWcontent[summation][linenumber] = line
+        #
+        # for each, content in sorted(list(NEWcontent.items()), reverse=True):
+        #     for key in content:
+        #         otherGFF.append(content[key])
+        #unParseTable(otherGFF,output,'\t')
+        unParseTable(newGFF,output,'\t')
     else:
         parser.print_help()
 

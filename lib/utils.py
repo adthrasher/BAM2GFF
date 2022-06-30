@@ -1111,6 +1111,7 @@ class Bam:
         locusLine = locus.chr()+':'+str(locus.start())+'-'+str(locus.end())
 
         command = '%s view %s %s' % (samtoolsString,self._bam,locusLine)
+
         if printCommand:
             print(command)
         getReads = subprocess.Popen(command,stdin = subprocess.PIPE,stderr = subprocess.PIPE,stdout = subprocess.PIPE,shell = True)
@@ -1118,6 +1119,7 @@ class Bam:
         reads = reads[0].decode("utf-8")
         reads = reads.split('\n')[:-1]
         reads = [read.split('\t') for read in reads]
+
         if includeJxnReads == False:
             reads = [x for x in reads if x[5].count('N') < 1]
 
