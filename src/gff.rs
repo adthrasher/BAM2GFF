@@ -12,6 +12,7 @@ use crate::{locus::Strand, Config};
 pub struct GffRecord {
     pub seqname: String,
     pub source: String,
+    #[allow(dead_code)]
     pub feature: String,
     pub start: usize,
     pub end: usize,
@@ -22,6 +23,7 @@ pub struct GffRecord {
 }
 
 impl GffRecord {
+    #[allow(clippy::too_many_arguments, dead_code)]
     pub fn new(
         seqname: String,
         source: String,
@@ -104,7 +106,7 @@ impl GffRecord {
 
         // Set a default ID if none exists
         if !attributes.contains_key("ID") {
-            let id = format!("{}:{}-{}", seqname, start, end);
+            let id = format!("{seqname}:{start}-{end}");
             attributes.insert("ID".to_string(), id);
         }
 
@@ -122,12 +124,12 @@ impl GffRecord {
     }
 
     pub fn to_gff_line(&self) -> String {
-        let score_str = self
+        let _score_str = self
             .score
             .map(|s| s.to_string())
             .unwrap_or_else(|| ".".to_string());
 
-        let frame_str = self
+        let _frame_str = self
             .frame
             .map(|f| f.to_string())
             .unwrap_or_else(|| ".".to_string());
@@ -178,21 +180,28 @@ pub fn parse_gff<P: AsRef<Path>>(path: P) -> Result<Vec<GffRecord>> {
 }
 
 pub fn write_gff(records: &[GffRecord], config: &Config) -> Result<()> {
-    let file = config.output_file.clone().unwrap_or_else(|| "matrix.txt".into());
+    let file = config
+        .output_file
+        .clone()
+        .unwrap_or_else(|| "matrix.txt".into());
     let path = Path::new(&file);
-    let file = File::create(&path)
+    let file = File::create(path)
         .with_context(|| format!("Failed to create output file: {}", &path.display()))?;
 
     let mut writer = BufWriter::new(file);
 
     // Write GFF header
     // writeln!(writer, "##gff-version 3")?;
-    
+
     let mut v = vec!["GENE_ID".to_string(), "locusLine".to_string()];
     // TODO: pass the bin count and the bam name in to generate the header
     let p = Path::new(&config.bam_file);
     for i in 1..=config.matrix_bins.unwrap_or(50) {
-        v.push(format!("bin_{}_{}", i, p.file_name().unwrap_or_default().to_string_lossy()));
+        v.push(format!(
+            "bin_{}_{}",
+            i,
+            p.file_name().unwrap_or_default().to_string_lossy()
+        ));
     }
     writeln!(writer, "{}", v.join("\t"))?;
 

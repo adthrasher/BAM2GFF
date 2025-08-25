@@ -65,10 +65,12 @@ impl Locus {
         self.end.saturating_sub(self.start) + 1
     }
 
+    #[allow(dead_code)]
     pub fn overlaps(&self, other: &Locus) -> bool {
         self.chromosome == other.chromosome && self.start <= other.end && other.start <= self.end
     }
 
+    #[allow(dead_code)]
     pub fn contains(&self, other: &Locus) -> bool {
         self.chromosome == other.chromosome && self.start <= other.start && other.end <= self.end
     }
@@ -94,6 +96,7 @@ impl Locus {
         }
     }
 
+    #[allow(dead_code)]
     pub fn extend_symmetric(&self, extension: u32) -> Self {
         Self {
             chromosome: self.chromosome.clone(),

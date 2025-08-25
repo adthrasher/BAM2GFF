@@ -1,10 +1,10 @@
 use anyhow::{Context, Result};
 use clap::{Arg, Command};
 use noodles::{
-    bam, bgzf, csi::BinningIndex, sam::alignment::record::cigar::op::Kind as CigarOpKind,
+    bam, sam::alignment::record::cigar::op::Kind as CigarOpKind,
 };
 use rayon::prelude::*;
-use std::{collections::HashMap, fs::File, path::Path};
+use std::{collections::HashMap, path::Path};
 
 mod gff;
 mod locus;
@@ -189,7 +189,10 @@ fn main() -> Result<()> {
     // Write output
     write_gff(&results, &config)?;
 
-    println!("Output written to: {}", config.output_file.as_ref().unwrap_or(&"stdout".into()));
+    println!(
+        "Output written to: {}",
+        config.output_file.as_ref().unwrap_or(&"stdout".into())
+    );
     Ok(())
 }
 
@@ -218,7 +221,7 @@ fn validate_config(config: &Config) -> Result<()> {
 }
 
 fn check_bam_index(bam_file: &str) -> Result<()> {
-    let bai_file = format!("{}.bai", bam_file);
+    let bai_file = format!("{bam_file}.bai");
     if !Path::new(&bai_file).exists() {
         return Err(anyhow::anyhow!(
             "BAM index file not found: {}. Please create an index using 'samtools index'",
@@ -228,10 +231,11 @@ fn check_bam_index(bam_file: &str) -> Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
 fn get_bam_stats(bam_file: &str) -> Result<BamStats> {
-    let mut reader = bam::io::reader::Builder::default()
+    let mut reader = bam::io::reader::Builder
         .build_from_path(bam_file)
-        .with_context(|| format!("Failed to open BAM file: {}", bam_file))?;
+        .with_context(|| format!("Failed to open BAM file: {bam_file}"))?;
 
     let _header = reader.read_header()?;
 
@@ -254,6 +258,7 @@ fn get_bam_stats(bam_file: &str) -> Result<BamStats> {
     })
 }
 
+#[allow(dead_code)]
 fn calculate_mmr(config: &Config, bam_stats: &BamStats) -> Result<f64> {
     if let Some(unique_reads) = config.unique_reads {
         if config.rpm {
@@ -280,8 +285,8 @@ fn process_gff_records(
         // .iter()
         .enumerate()
         .map(|(i, record)| {
-            if i % 10000 == 0 {
-                println!("Processed {} records", i);
+            if i.is_multiple_of(10000) {
+                println!("Processed {i} records");
             }
             process_single_gff_record(config, record, mmr)
         })
@@ -418,23 +423,21 @@ fn has_junction(record: &bam::Record) -> bool {
 fn extend_reads(reads: &[Locus], extension: u32) -> Vec<Locus> {
     reads
         .iter()
-        .map(|read| {
-            match read.strand {
-                Strand::Plus | Strand::Both => Locus::new(
-                    read.chromosome.clone(),
-                    read.start,
-                    read.end + extension as usize,
-                    read.strand,
-                    read.id.clone(),
-                ),
-                Strand::Minus => Locus::new(
-                    read.chromosome.clone(),
-                    read.start.saturating_sub(extension as usize),
-                    read.end,
-                    read.strand,
-                    read.id.clone(),
-                )
-            }
+        .map(|read| match read.strand {
+            Strand::Plus | Strand::Both => Locus::new(
+                read.chromosome.clone(),
+                read.start,
+                read.end + extension as usize,
+                read.strand,
+                read.id.clone(),
+            ),
+            Strand::Minus => Locus::new(
+                read.chromosome.clone(),
+                read.start.saturating_sub(extension as usize),
+                read.end,
+                read.strand,
+                read.id.clone(),
+            ),
         })
         .collect()
 }
@@ -445,13 +448,16 @@ fn separate_reads_by_strand(reads: &[Locus], gff_locus: &Locus) -> (Vec<Locus>, 
 
     for read in reads {
         match (gff_locus.strand, read.strand) {
-            (Strand::Plus, Strand::Plus) | (Strand::Plus, Strand::Both) | (Strand::Minus, Strand::Minus) | (Strand::Minus, Strand::Both) | (Strand::Both, _) => {
+            (Strand::Plus, Strand::Plus)
+            | (Strand::Plus, Strand::Both)
+            | (Strand::Minus, Strand::Minus)
+            | (Strand::Minus, Strand::Both)
+            | (Strand::Both, _) => {
                 sense_reads.push(read.clone());
             }
             (Strand::Plus, Strand::Minus) | (Strand::Minus, Strand::Plus) => {
                 antisense_reads.push(read.clone());
             }
-            _ => sense_reads.push(read.clone()), // Default case
         }
     }
 
@@ -515,7 +521,7 @@ fn calculate_density_result(
         } else {
             total_density
         };
-        Ok(format!("{:.4}", normalized_density))
+        Ok(format!("{normalized_density:.4}"))
     }
 }
 
@@ -579,9 +585,8 @@ fn calculate_matrix_result(
         s = s.trim_end_matches("0").to_string();
 
         if (bin_density / mmr) > 0.0 {
-            bins.push(format!("{}", s));
-        }
-        else {
+            bins.push(s);
+        } else {
             bins.push("0.0".to_string());
         }
 
