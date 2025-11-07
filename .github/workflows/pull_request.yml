@@ -46,10 +46,11 @@ jobs:
     - run: cargo --locked build --release --target ${{ matrix.rust-target }}
     - run: 7z a SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.zip SJ-BAM2GFF.exe
       working-directory: ./target/${{ matrix.rust-target }}/release
-    - name: Update the GH release with the new artifact
-      uses: softprops/action-gh-release@v2
+    - name: Upload the new artifact
+      uses: actions/upload-artifact@v5
       with:
-        files: ./target/${{ matrix.rust-target }}/release/SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.${{ matrix.extension }}
+        name: SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.${{ matrix.extension }}
+        path: ./target/${{ matrix.rust-target }}/release/SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.${{ matrix.extension }}
   build_artifacts_mac:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -72,10 +73,11 @@ jobs:
     - run: PKG_CONFIG_SYSROOT_DIR=/ cargo --locked build --release --target ${{ matrix.rust-target }}
     - run: tar -czvf SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.tar.gz SJ-BAM2GFF
       working-directory: ./target/${{ matrix.rust-target }}/release
-    - name: Update the GH release with the new artifact
-      uses: softprops/action-gh-release@v2
+    - name: Upload the new artifact
+      uses: actions/upload-artifact@v5
       with:
-        files: ./target/${{ matrix.rust-target }}/release/SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.${{ matrix.extension }}
+        name: SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.${{ matrix.extension }}
+        path: ./target/${{ matrix.rust-target }}/release/SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.${{ matrix.extension }}
   build_artifacts_linux:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -98,7 +100,8 @@ jobs:
     - run: PKG_CONFIG_SYSROOT_DIR=/ cargo --locked build --release --target ${{ matrix.rust-target }}
     - run: tar -czvf SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.tar.gz SJ-BAM2GFF
       working-directory: ./target/${{ matrix.rust-target }}/release
-    - name: Update the GH release with the new artifact
-      uses: softprops/action-gh-release@v2
+    - name: Upload the new artifact
+      uses: actions/upload-artifact@v5
       with:
-        files: ./target/${{ matrix.rust-target }}/release/SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.${{ matrix.extension }}
+        name: SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.${{ matrix.extension }}
+        path: ./target/${{ matrix.rust-target }}/release/SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.${{ matrix.extension }}
