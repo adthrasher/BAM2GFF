@@ -41,16 +41,19 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: true
+    - name: Set Env
+      run: |
+        echo "${{ github.ref_name }}" | sed 's#/#_#g' | (read; echo GH_REF=$REPLY) >> $GITHUB_ENV
     - name: Update Rust
       run: rustup update stable && rustup default stable && rustup target add ${{ matrix.rust-target }}
     - run: cargo --locked build --release --target ${{ matrix.rust-target }}
-    - run: 7z a SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.zip SJ-BAM2GFF.exe
+    - run: 7z a SJ-BAM2GFF-${{ env.GH_REF }}-${{ matrix.rust-target }}.zip SJ-BAM2GFF.exe
       working-directory: ./target/${{ matrix.rust-target }}/release
     - name: Upload the new artifact
       uses: actions/upload-artifact@v5
       with:
-        name: SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.${{ matrix.extension }}
-        path: ./target/${{ matrix.rust-target }}/release/SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.${{ matrix.extension }}
+        name: SJ-BAM2GFF-${{ env.GH_REF }}-${{ matrix.rust-target }}.${{ matrix.extension }}
+        path: ./target/${{ matrix.rust-target }}/release/SJ-BAM2GFF-${{ env.GH_REF }}-${{ matrix.rust-target }}.${{ matrix.extension }}
   build_artifacts_mac:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -67,17 +70,20 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: true
+    - name: Set Env
+      run: |
+        echo "${{ github.ref_name }}" | sed 's#/#_#g' | (read; echo GH_REF=$REPLY) >> $GITHUB_ENV
     - name: Update Rust
       run: rustup update stable && rustup default stable && rustup target add ${{ matrix.rust-target }}
     - run: brew install openssl pkg-config
     - run: PKG_CONFIG_SYSROOT_DIR=/ cargo --locked build --release --target ${{ matrix.rust-target }}
-    - run: tar -czvf SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.tar.gz SJ-BAM2GFF
+    - run: tar -czvf SJ-BAM2GFF-${{ env.GH_REF }}-${{ matrix.rust-target }}.tar.gz SJ-BAM2GFF
       working-directory: ./target/${{ matrix.rust-target }}/release
     - name: Upload the new artifact
       uses: actions/upload-artifact@v5
       with:
-        name: SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.${{ matrix.extension }}
-        path: ./target/${{ matrix.rust-target }}/release/SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.${{ matrix.extension }}
+        name: SJ-BAM2GFF-${{ env.GH_REF }}-${{ matrix.rust-target }}.${{ matrix.extension }}
+        path: ./target/${{ matrix.rust-target }}/release/SJ-BAM2GFF-${{ env.GH_REF }}-${{ matrix.rust-target }}.${{ matrix.extension }}
   build_artifacts_linux:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -94,14 +100,17 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: true
+    - name: Set Env
+      run: |
+        echo "${{ github.ref_name }}" | sed 's#/#_#g' | (read; echo GH_REF=$REPLY) >> $GITHUB_ENV
     - name: Update Rust
       run: rustup update stable && rustup default stable && rustup target add ${{ matrix.rust-target }}
     - run: sudo apt-get install pkg-config libssl-dev
     - run: PKG_CONFIG_SYSROOT_DIR=/ cargo --locked build --release --target ${{ matrix.rust-target }}
-    - run: tar -czvf SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.tar.gz SJ-BAM2GFF
+    - run: tar -czvf SJ-BAM2GFF-${{ env.GH_REF }}-${{ matrix.rust-target }}.tar.gz SJ-BAM2GFF
       working-directory: ./target/${{ matrix.rust-target }}/release
     - name: Upload the new artifact
       uses: actions/upload-artifact@v5
       with:
-        name: SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.${{ matrix.extension }}
-        path: ./target/${{ matrix.rust-target }}/release/SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.${{ matrix.extension }}
+        name: SJ-BAM2GFF-${{ env.GH_REF }}-${{ matrix.rust-target }}.${{ matrix.extension }}
+        path: ./target/${{ matrix.rust-target }}/release/SJ-BAM2GFF-${{ env.GH_REF }}-${{ matrix.rust-target }}.${{ matrix.extension }}
