@@ -26,16 +26,79 @@ jobs:
         run: rustup component add clippy
       - run: cargo --locked clippy --all-features -- --deny warnings
 
-  build-artifact:
-    runs-on: ubuntu-latest
+  build_artifacts_win:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rust-target: x86_64-pc-windows-msvc
+            os: windows-latest
+            extension: zip
+          - rust-target: aarch64-pc-windows-msvc
+            extension: zip
     steps:
-      - uses: actions/checkout@v3
-      - name: Update Rust
-        run: rustup update stable && rustup default stable
-      - name: Build
-        run: cargo build --release
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v5
-        with:
-          name: SJ-BAM2GFF-${{ github.event.pull_request.number }}-${{ github.sha }}
-          path: target/release/SJ-BAM2GFF
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Update Rust
+      run: rustup update stable && rustup default stable && rustup target add ${{ matrix.rust-target }}
+    - run: cargo --locked build --release --target ${{ matrix.rust-target }}
+    - run: 7z a SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.zip SJ-BAM2GFF.exe
+      working-directory: ./target/${{ matrix.rust-target }}/release
+    - name: Update the GH release with the new artifact
+      uses: softprops/action-gh-release@v2
+      with:
+        files: ./target/${{ matrix.rust-target }}/release/SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.${{ matrix.extension }}
+  build_artifacts_mac:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rust-target: x86_64-apple-darwin
+            os: macos-latest
+            extension: tar.gz
+          - rust-target: aarch64-apple-darwin
+            os: macos-latest
+            extension: tar.gz
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Update Rust
+      run: rustup update stable && rustup default stable && rustup target add ${{ matrix.rust-target }}
+    - run: brew install openssl pkg-config
+    - run: PKG_CONFIG_SYSROOT_DIR=/ cargo --locked build --release --target ${{ matrix.rust-target }}
+    - run: tar -czvf SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.tar.gz SJ-BAM2GFF
+      working-directory: ./target/${{ matrix.rust-target }}/release
+    - name: Update the GH release with the new artifact
+      uses: softprops/action-gh-release@v2
+      with:
+        files: ./target/${{ matrix.rust-target }}/release/SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.${{ matrix.extension }}
+  build_artifacts_linux:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rust-target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            extension: tar.gz
+          - rust-target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+            extension: tar.gz
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Update Rust
+      run: rustup update stable && rustup default stable && rustup target add ${{ matrix.rust-target }}
+    - run: sudo apt-get install pkg-config libssl-dev
+    - run: PKG_CONFIG_SYSROOT_DIR=/ cargo --locked build --release --target ${{ matrix.rust-target }}
+    - run: tar -czvf SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.tar.gz SJ-BAM2GFF
+      working-directory: ./target/${{ matrix.rust-target }}/release
+    - name: Update the GH release with the new artifact
+      uses: softprops/action-gh-release@v2
+      with:
+        files: ./target/${{ matrix.rust-target }}/release/SJ-BAM2GFF-${{ github.ref_name }}-${{ matrix.rust-target }}.${{ matrix.extension }}
