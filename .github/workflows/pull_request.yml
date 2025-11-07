@@ -43,7 +43,8 @@ jobs:
         submodules: true
     - name: Set Env
       run: |
-        echo "${{ github.ref_name }}" | sed 's#/#_#g' | (read; echo GH_REF=$REPLY) >> $GITHUB_ENV
+        $ref = "${{ github.ref_name }}" -replace '/', '_'
+        echo "GH_REF=$ref" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     - name: Update Rust
       run: rustup update stable && rustup default stable && rustup target add ${{ matrix.rust-target }}
     - run: cargo --locked build --release --target ${{ matrix.rust-target }}
