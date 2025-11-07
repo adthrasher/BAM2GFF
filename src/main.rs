@@ -1,8 +1,6 @@
 use anyhow::{Context, Result};
 use clap::{Arg, Command};
-use noodles::{
-    bam, sam::alignment::record::cigar::op::Kind as CigarOpKind,
-};
+use noodles::{bam, sam::alignment::record::cigar::op::Kind as CigarOpKind};
 use rayon::prelude::*;
 use std::{collections::HashMap, path::Path};
 
